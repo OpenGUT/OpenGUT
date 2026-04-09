@@ -1,6 +1,6 @@
 # OpenGUTv1 Firmware
 
-Firmware for an nRF52840-based audio platform built on Zephyr (NCS).
+Firmware for OpenGUTv1: nRF52840-based platform built on Zephyr (NCS).
 
 This project implements:
 - Stereo audio capture from a PDM microphone.
