@@ -1,5 +1,0 @@
-OpenGUTv1 Project
-=================
-This firmware is running on our custom BT840F-based PCB.
-The board is being validated with the nRF52840 DK as the programmer.
-This SD card test confirms file creation and basic storage access.
