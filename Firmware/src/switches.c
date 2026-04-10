@@ -7,7 +7,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/atomic.h>
 
-#include "swicthes.h"
+#include "switches.h"
 
 #define SWITCH_DEBOUNCE_MS 20
 
