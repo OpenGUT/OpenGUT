@@ -160,7 +160,7 @@ src/PDM.c         PDM capture and live monitor
 src/Playback.c    WAV playback over I2S
 src/SD.c          SD/FATFS initialization and file helpers
 src/led.c         LED driver helpers
-src/swicthes.c    Button handling (debounced interrupts)
+src/switches.c    Button handling (debounced interrupts)
 prj.conf          Zephyr Kconfig
 nrf52840dk_nrf52840.overlay  DeviceTree pin/peripheral mapping
 ```
