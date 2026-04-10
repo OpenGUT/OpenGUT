@@ -50,14 +50,7 @@ OpenGut has been technically evaluated for:
 ## 🔓 Open Source Vision
 OpenGut aims to lower the barrier to entry in gut-computer interaction research by providing a fully open, reproducible, and extensible platform for the community.
 
-## 📄 Paper
-For more details, see our paper:  
-👉 OpenGut: An Open-Source Platform for Gut-Computer Interaction Research :contentReference[oaicite:0]{index=0}
-
----
 
 ## 🤝 Contributions
 We welcome contributions from researchers, engineers, and designers interested in advancing gut-based interaction systems.
 
-## 📬 Contact
-For collaborations or questions, feel free to reach out.
