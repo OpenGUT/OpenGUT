@@ -1,179 +1,63 @@
-# OpenGUTv1 Firmware
+## Firmware Options
 
-Firmware for OpenGUTv1: nRF52840-based platform built on Zephyr (NCS).
+We provide two firmware versions depending on the researcher’s preferred workflow.
 
-This project implements:
-- Stereo audio capture from a PDM microphone.
-- WAV playback from microSD through I2S.
-- Live microphone monitoring (PDM input to I2S output).
-- Button-driven mode selection and execution.
-- 4-LED status UI for mode indication, progress, and error states.
+---
 
-## Features
+### 1. Firmware_UI_based_Selection
 
-### Audio pipeline
-- Records **16-bit stereo WAV** at **16 kHz** to SD card.
-- Plays WAV files from SD card over I2S.
-- Supports mono or stereo WAV input for playback (mono is duplicated to both channels).
-- Live monitor mode streams microphone input directly to I2S output in real time.
+This firmware wraps all settings into the UI.
 
-### Storage
-- Uses SPI-connected microSD card (`/SD:` mount point, FAT filesystem).
-- Automatically writes `hello.txt` to verify SD write path.
-- Rotating record filenames: `rec0.wav` ... `rec9.wav` (first missing index is used; wraps to `rec0.wav`).
+#### Setup & Flashing
+- Set up the Zephyr / NCS environment  
+  - Recommended: nRF Connect SDK on VS Code  
+- Build the firmware  
+- Flash using an nRF52840 DK  
+  - Connect **Debug Out (DK)** → **Debug In (PCB)**  
+- Flash the firmware onto the PCB  
 
-### UI behavior
-- **SW1**: mode select
-  - Short press: next mode
-  - Long press (>= 700 ms): previous mode
-- **SW2**: execute selected mode (and stop recording/live monitor)
-- **LED1..LED4** indicate current mode; active mode blinks while running.
-- Error condition: selected mode LED blinks continuously.
+Once flashed, the PCB is ready to use.
 
-### Modes
-- **Mode 1 (LED1): Record Stereo**
-  - Starts recording to `/SD:/recX.wav`
-  - Press SW2 again to stop
-- **Mode 2 (LED2): Live Monitor**
-  - Streams PDM mic to I2S output
-  - Press SW2 again to stop
-- **Mode 3 (LED3): Play Loud**
-  - Plays `/SD:/loud.wav`
-- **Mode 4 (LED4): Play Medium**
-  - Plays `/SD:/medium.wav`
+#### Usage
+1. Insert the SD card into your laptop  
+2. Using the provided UI, select:
+   - Mode  
+   - Sampling rate  
+   - Duration  
+   - File name  
+3. Remove the SD card and insert it into the PCB  
+4. Turn ON the PCB  
 
-## Hardware Mapping (from DeviceTree overlay)
+→ The selected mode will run automatically  
 
-### GPIO and controls
-- LED1: `P1.14` (active low)
-- LED2: `P1.13` (active low)
-- LED3: `P1.12` (active low)
-- LED4: `P1.11` (active low)
-- SW1: `P1.06` (pull-up, active low)
-- SW2: `P0.28` (pull-up, active low)
+---
 
-### Audio + SD interfaces
-- PDM CLK: `P0.21`
-- PDM DIN: `P1.08`
-- I2S SCK: `P0.12`
-- I2S LRCK: `P0.20`
-- I2S SDOUT: `P0.15`
-- SPI1 SCK: `P0.14`
-- SPI1 MOSI: `P0.27`
-- SPI1 MISO: `P0.26`
-- SD CS: `P0.16`
+### 2. Firmware_Button_based_Selection
 
-## Prerequisites
+This firmware keeps primary settings (sampling rate, file name, etc.) in the UI,  
+but allows mode control directly on the PCB using buttons.
 
-Install one of these workflows:
-- **nRF Connect for Desktop + Toolchain Manager + VS Code extension**, or
-- **West CLI + Zephyr/NCS environment**.
+#### Setup
+- Same flashing process as above  
+- Configure settings using the UI  
 
-Typical required tools:
-- `west`
-- `cmake`
-- `ninja`
-- ARM GCC toolchain
-- One flash/debug tool: `nrfjprog`, `JLink`, or `pyocd`
+#### Usage
+Once powered ON:
 
-## Build
+- **Button 1** → Select mode  
+  - Current mode is indicated by LEDs:
+    - **LED1** → Stereo recording  
+    - **LED2** → Loopback  
+    - **LED3** → Playback (File A)  
+    - **LED4** → Playback (File B)  
 
-From repository root:
+- **Button 2** → Start / Stop  
 
-```bash
-west build -b nrf52840dk_nrf52840 -p always
-```
+---
 
-Firmware artifact is generated at:
-- `build/zephyr/zephyr.hex`
+### Why Use Button-Based Firmware?
 
-## Upload Firmware to PCB
-
-You can flash either:
-1. An **nRF52840 DK** directly, or
-2. A **custom PCB** over SWD using an external probe.
-
-### Option A: Flash nRF52840 DK directly
-
-Connect the board over USB, then run:
-
-```bash
-west flash
-```
-
-If multiple probes are connected, specify one (example):
-
-```bash
-west flash --runner nrfjprog --dev-id <probe_serial>
-```
-
-### Option B: Flash custom PCB via SWD (recommended for production PCB)
-
-1. Connect a debug probe (J-Link, nRF52840 DK used as debugger, or CMSIS-DAP) to your PCB:
-   - `SWDIO` -> MCU SWDIO
-   - `SWCLK` -> MCU SWDCLK
-   - `GND` -> GND
-   - `VTref`/`VCC` -> target voltage reference
-   - Optional: `RESET` -> nRESET
-2. Power your PCB correctly (battery/regulator/external supply as designed).
-3. Build firmware if not already built.
-4. Program the HEX file.
-
-Using `nrfjprog`:
-
-```bash
-nrfjprog --eraseall
-nrfjprog --program build/zephyr/zephyr.hex --verify
-nrfjprog --reset
-```
-
-Using `west` with nrfjprog runner:
-
-```bash
-west flash --runner nrfjprog --hex-file build/zephyr/zephyr.hex
-```
-
-Using pyOCD (if your probe/target config supports it):
-
-```bash
-pyocd flash build/zephyr/zephyr.hex --target nrf52840
-```
-
-### Flashing checklist for custom PCB
-- SWD wiring continuity is correct.
-- Probe detects the target voltage.
-- nRF52 is not held in reset by external circuitry.
-- Boot/config pins and power rails are stable.
-- SD card is FAT-formatted and inserted before running SD/audio modes.
-
-## Runtime Notes
-
-- On first boot, firmware may configure nRF52840 `UICR.REGOUT0` for 3.0 V output and reset.
-- Logging is disabled in this configuration (`CONFIG_LOG=n`).
-- Keep `loud.wav` and `medium.wav` in SD root for playback modes.
-
-## Repository Structure
-
-```text
-src/main.c        Application state machine and mode logic
-src/PDM.c         PDM capture and live monitor
-src/Playback.c    WAV playback over I2S
-src/SD.c          SD/FATFS initialization and file helpers
-src/led.c         LED driver helpers
-src/switches.c    Button handling (debounced interrupts)
-prj.conf          Zephyr Kconfig
-nrf52840dk_nrf52840.overlay  DeviceTree pin/peripheral mapping
-```
-
-## Troubleshooting
-
-- `SD_Init` fails:
-  - Check SPI wiring, CS pin, SD power, and FAT formatting.
-- Playback mode exits quickly:
-  - Confirm `/SD:/loud.wav` and `/SD:/medium.wav` exist and are valid 16-bit PCM WAV.
-- No audio output in monitor/playback:
-  - Verify I2S wiring (`SCK`, `LRCK`, `SDOUT`) and codec/amplifier clocks.
-- Mode buttons not responding:
-  - Confirm SW1/SW2 pin mapping and pull-up behavior.
-
-
+This firmware allows researchers to:
+- Quickly switch between modes  
+- Avoid removing the SD card repeatedly  
+- Test different configurations on the go  
