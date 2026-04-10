@@ -176,6 +176,4 @@ nrf52840dk_nrf52840.overlay  DeviceTree pin/peripheral mapping
 - Mode buttons not responding:
   - Confirm SW1/SW2 pin mapping and pull-up behavior.
 
-## License
 
-Add your project license here (for example MIT, Apache-2.0, proprietary).
