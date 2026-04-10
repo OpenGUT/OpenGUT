@@ -1,7 +1,7 @@
 ## PCB Design & Flashing Guide
 
 <p align="center">
-  <img src="../images/PCB.jpg" width="400"/>
+  <img src="Hardware/Images/PCB.jpg" width="400"/>
 </p>
 
 The `Project_Output_OpenGUT.zip` file contains the Gerber files required for PCB manufacturing (e.g., via JLCPCB).
@@ -21,17 +21,17 @@ The enclosure consists of three 3D-printable components that house the electroni
 
 **Top Casing** – Protective upper shell  
 <p align="center">
-  <img src="../images/TopCover.png" width="400"/>
+  <img src="Hardware/Images/TopCover.png" width="400"/>
 </p>
 
 **Bottom Casing** – Structural base for internal components  
 <p align="center">
-  <img src="../images/BottomCover.png" width="400"/>
+  <img src="Hardware/Images/BottomCover.png" width="400"/>
 </p>
 
 **Conical Interface** – Skin-contact interface  
 <p align="center">
-  <img src="../images/Cone.png" width="400"/>
+  <img src="Hardware/Images/Cone.png" width="400"/>
 </p>
 
 ---
@@ -43,7 +43,7 @@ Attach a standard Littmann diaphragm directly to the cone.
 [Example Littmann diaphragm][littmann]
 
 <p align="center">
-  <img src="../images/Litmann.jpg" width="400"/>
+  <img src="Hardware/Images/Litmann.jpg" width="400"/>
 </p>
 
 ---
@@ -53,7 +53,7 @@ Attach a standard Littmann diaphragm directly to the cone.
 - Secure the cone to the bottom casing using hot glue  
 
 <p align="center">
-  <img src="../images/Assembly.png" width="400"/>
+  <img src="Hardware/Images/Assembly.png" width="400"/>
 </p>
 
 - Attach the top casing using the lip-and-groove mechanism  
