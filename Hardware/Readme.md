@@ -1,40 +1,47 @@
-PCB Design & Flashing Guide
+## PCB Design & Flashing Guide
 
-![testing](../images/PCB.png "testign123")
+![PCB](../images/PCB.jpg)
 
-Project_Output_OpenGUT.zip has the Gerber file which can be used to manufacture through a PCB manufacturer like JLCPCB. 
-If you want to make any changes to the PCB design, the project file (OpenGUT.PrjPcb) can be opened on Altium and the changes can be made.  
+The `Project_Output_OpenGUT.zip` file contains the Gerber files required for PCB manufacturing (e.g., via JLCPCB).
 
-Enclosure Design & Assembly Guide
+To modify the design, open the project file `OpenGUT.PrjPcb` in Altium Designer and make the necessary changes.
 
-Overview
-The enclosure design consists of three primary components designed for 3D printing. These parts house the internal electronics and provide the necessary interface for skin contact.
-Main Components
-Top Casing: Protective upper shell.
-![testing](../images/TopCover.png "testign123")
+---
 
-Bottom Casing: Main structural base for internal components.
-![testing](../images/BottomCover.png "testign123")
+## Enclosure Design & Assembly Guide
 
+### Overview
+The enclosure consists of three 3D-printable components that house the electronics and provide a skin interface.
 
+### Components
 
-Conical Interface: The part that interfaces with the skin.
-![testing](../images/Cone.png "testign123")
+**Top Casing** – Protective upper shell  
+![Top Cover](../images/TopCover.png)
 
-Assembly Instructions
-1. Diaphragm Attachment
-Attach an off-the-shelf Littmann diaphragm directly to the cone component.
-![testing](../images/Litmann.png "testign123")
+**Bottom Casing** – Structural base for internal components  
+![Bottom Cover](../images/BottomCover.png)
 
-2. PCB and Casing Integration
-Screw the PCB into the mounting points on the bottom casing.
-Secure the cone to the bottom casing using hot glue.
-![testing](../images/Assembly.png "testign123")
-Attach the top casing to the bottom casing using lip and groove. 
+**Conical Interface** – Skin-contact interface  
+![Cone](../images/Cone.png)
 
+---
 
-3. Final Inspection
-Ensure all parts are flush and secure before final use.
+## Assembly Instructions
 
+### 1. Diaphragm Attachment
+Attach a standard Littmann diaphragm directly to the cone.
 
+![Diaphragm](../images/Litmann.jpg)
 
+### 2. PCB & Casing Integration
+- Screw the PCB into the mounting points on the bottom casing  
+- Secure the cone to the bottom casing using hot glue  
+
+![Assembly](../images/Assembly.png)
+
+- Attach the top casing using the lip-and-groove mechanism  
+
+---
+
+### 3. Final Inspection
+Ensure all components are securely fitted and properly aligned before use.
