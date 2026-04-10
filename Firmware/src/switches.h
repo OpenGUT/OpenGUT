@@ -1,5 +1,5 @@
-#ifndef SWICTHES_H
-#define SWICTHES_H
+#ifndef SWITCHES_H
+#define SWITCHES_H
 
 #include <stdbool.h>
 #include <stdint.h>
