@@ -11,5 +11,3 @@ It extends the original OpenGUT repository by providing open-source PCB layouts 
 - **Open-Source Alignment**: Since OpenGUT is an open-source platform, developing its PCB in KiCad strengthens transparency, collaboration, and community-driven improvements.
 
 ---
-
-## 📂 Repository Structure
