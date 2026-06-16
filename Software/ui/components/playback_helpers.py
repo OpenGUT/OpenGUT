@@ -10,10 +10,14 @@ from const import AUTO_FOLLOW_BUTTON_TEXT, PLAY_BUTTON_TEXT, TIME_LABEL_DEFAULT
 
 QMediaPlayer = None
 QAudioOutput = None
+QAudioDevice = None
+QMediaDevices = None
 try:
     qt_multimedia = importlib.import_module("PyQt6.QtMultimedia")
     QMediaPlayer = qt_multimedia.QMediaPlayer
     QAudioOutput = qt_multimedia.QAudioOutput
+    QAudioDevice = qt_multimedia.QAudioDevice
+    QMediaDevices = qt_multimedia.QMediaDevices
 except Exception:
     pass
 
@@ -114,6 +118,11 @@ class PlaybackControlsManager:
         self.playback_available = QMediaPlayer is not None and QAudioOutput is not None
         if self.playback_available:
             self.audio_output = QAudioOutput(parent)
+            try:
+                self.audio_output.setMuted(False)
+                self.audio_output.setVolume(1.0)
+            except Exception:
+                pass
             self.player = QMediaPlayer(parent)
             self.player.setAudioOutput(self.audio_output)
             self.player.positionChanged.connect(on_position_changed)
@@ -130,6 +139,13 @@ class PlaybackControlsManager:
         """Load media source into player if playback backend is available."""
         if self.player is None:
             return
+        # Ensure output is audible after cleanup paths that temporarily mute it.
+        if self.audio_output is not None:
+            try:
+                self.audio_output.setMuted(False)
+                self.audio_output.setVolume(1.0)
+            except Exception:
+                pass
         self.player.stop()
         self.player.setSource(QUrl.fromLocalFile(file_path))
 
@@ -138,6 +154,39 @@ class PlaybackControlsManager:
 
     def set_play_button_text(self, text):
         self.play_pause_btn.setText(text)
+
+    def set_audio_device(self, device_info):
+        """Set audio output to the Qt multimedia output matching description."""
+        if self.audio_output is None or QMediaDevices is None:
+            return
+
+        try:
+            if isinstance(device_info, dict):
+                device_description = device_info.get("description")
+            else:
+                device_description = device_info
+
+            if not device_description:
+                self.audio_output.setDevice(QMediaDevices.defaultAudioOutput())
+                return
+
+            audio_devices = QMediaDevices.audioOutputs()
+            selected_norm = str(device_description).strip().lower()
+            for qa_device in audio_devices:
+                qa_desc = qa_device.description()
+                qa_norm = str(qa_desc).strip().lower()
+                if qa_desc == device_description or selected_norm in qa_norm or qa_norm in selected_norm:
+                    self.audio_output.setDevice(qa_device)
+                    self.audio_output.setMuted(False)
+                    self.audio_output.setVolume(1.0)
+                    return
+
+            # Fallback to system default output.
+            self.audio_output.setDevice(QMediaDevices.defaultAudioOutput())
+            self.audio_output.setMuted(False)
+            self.audio_output.setVolume(1.0)
+        except Exception:
+            pass
 
     def sync_seek_position(self, position_ms):
         self.seek_slider.blockSignals(True)

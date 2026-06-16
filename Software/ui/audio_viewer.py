@@ -12,7 +12,7 @@ import numpy as np
 from .components.annotation_interaction import AnnotationInteractionManager
 from .components.annotation_overlays import AnnotationOverlayManager
 from .components.plot_utils import draw_waveform, draw_spectrogram
-from .components.playback_helpers import PlayheadOverlayManager, PlaybackControlsManager, format_mm_ss, QMediaPlayer
+from .components.playback_helpers import PlayheadOverlayManager, PlaybackControlsManager, format_mm_ss, QMediaPlayer, QMediaDevices
 from const import (
     BUTTON_AUTO_RANGE,
     BUTTON_REPLOT,
@@ -117,7 +117,10 @@ class AudioViewerWidget(QWidget):
         self.filter_playback_mode = "original"  # "original" or "processed" - which to play in filter mode
         self.processed_player = None  # Separate player for processed audio in filter mode
         self.processed_audio_output = None
+        self.output_device_description = None
         self._syncing_player_positions = False
+        self.test_tone_player = None
+        self.test_tone_temp_path = None
 
         self.playback_controls = None
         self.player = None
@@ -134,6 +137,100 @@ class AudioViewerWidget(QWidget):
     def should_include_right_playhead(self):
         """Determine whether playhead overlays should be mirrored to the lower plot."""
         return self.filter_preview_mode or not self.is_mono
+
+    def set_audio_output_device(self, device_info):
+        """Apply selected output device to both original and processed playback outputs."""
+        device_description = str(device_info or "").strip()
+
+        self.output_device_description = device_description
+        if self.playback_controls is not None:
+            self.playback_controls.set_audio_device(device_info)
+
+        if self.processed_audio_output is None or QMediaDevices is None or not device_description:
+            return
+
+        try:
+            selected_norm = str(device_description).strip().lower()
+            for qa_device in QMediaDevices.audioOutputs():
+                qa_desc = qa_device.description()
+                qa_norm = str(qa_desc).strip().lower()
+                if qa_desc == device_description or selected_norm in qa_norm or qa_norm in selected_norm:
+                    self.processed_audio_output.setDevice(qa_device)
+                    self.processed_audio_output.setMuted(False)
+                    self.processed_audio_output.setVolume(1.0)
+                    return
+            self.processed_audio_output.setDevice(QMediaDevices.defaultAudioOutput())
+            self.processed_audio_output.setMuted(False)
+            self.processed_audio_output.setVolume(1.0)
+        except Exception:
+            pass
+
+    def _cleanup_test_tone_temp(self):
+        if self.test_tone_temp_path:
+            try:
+                import os
+                if os.path.exists(self.test_tone_temp_path):
+                    os.remove(self.test_tone_temp_path)
+            except Exception:
+                pass
+            self.test_tone_temp_path = None
+
+    def play_output_test_tone(self):
+        """Play a 1-second 440 Hz tone via the same shared Qt audio output used for playback."""
+        if QMediaPlayer is None:
+            QMessageBox.warning(self, PLAYBACK_UNAVAILABLE_TITLE, PLAYBACK_UNAVAILABLE_MESSAGE)
+            return
+        if self.playback_controls is None or self.playback_controls.audio_output is None:
+            QMessageBox.warning(self, PLAYBACK_UNAVAILABLE_TITLE, PLAYBACK_UNAVAILABLE_MESSAGE)
+            return
+
+        self._cleanup_test_tone_temp()
+        try:
+            import tempfile
+            import wave
+
+            sr = 44100
+            duration_sec = 1.0
+            tone_hz = 440.0
+            t = np.linspace(0.0, duration_sec, int(sr * duration_sec), endpoint=False)
+            tone = (0.25 * np.sin(2 * np.pi * tone_hz * t) * 32767.0).astype(np.int16)
+
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                with wave.open(tmp.name, 'wb') as wav_file:
+                    wav_file.setnchannels(1)
+                    wav_file.setsampwidth(2)  # PCM16
+                    wav_file.setframerate(sr)
+                    wav_file.writeframes(tone.tobytes())
+                self.test_tone_temp_path = tmp.name
+
+            if self.test_tone_player is None:
+                self.test_tone_player = QMediaPlayer(self)
+                self.test_tone_player.setAudioOutput(self.playback_controls.audio_output)
+                self.test_tone_player.errorOccurred.connect(
+                    lambda *_args: QMessageBox.warning(
+                        self,
+                        PLAYBACK_UNAVAILABLE_TITLE,
+                        f"Test tone playback failed:\n{self.test_tone_player.errorString()}"
+                    )
+                )
+                self.test_tone_player.mediaStatusChanged.connect(
+                    lambda status: self._cleanup_test_tone_temp()
+                    if QMediaPlayer is not None and status == QMediaPlayer.MediaStatus.EndOfMedia
+                    else None
+                )
+
+            # Ensure currently selected output is audible.
+            try:
+                self.playback_controls.audio_output.setMuted(False)
+                self.playback_controls.audio_output.setVolume(1.0)
+            except Exception:
+                pass
+
+            self.test_tone_player.stop()
+            self.test_tone_player.setSource(QUrl.fromLocalFile(self.test_tone_temp_path))
+            self.test_tone_player.play()
+        except Exception as exc:
+            QMessageBox.warning(self, PLAYBACK_UNAVAILABLE_TITLE, f"Failed to play test tone:\n{exc}")
     
     def init_ui(self):
         layout = QVBoxLayout()
@@ -882,6 +979,17 @@ class AudioViewerWidget(QWidget):
         """Play/pause audio through the system default output device."""
         player = self.get_active_player()
 
+        # Keep output sinks audible in case backend/device transitions muted them.
+        try:
+            if self.playback_controls is not None and self.playback_controls.audio_output is not None:
+                self.playback_controls.audio_output.setMuted(False)
+                self.playback_controls.audio_output.setVolume(1.0)
+            if self.processed_audio_output is not None:
+                self.processed_audio_output.setMuted(False)
+                self.processed_audio_output.setVolume(1.0)
+        except Exception:
+            pass
+
         if self.filter_preview_mode and self.filter_playback_mode == "processed":
             if self.filter_preview_output is None or self.processed_player is None:
                 QMessageBox.information(
@@ -898,6 +1006,16 @@ class AudioViewerWidget(QWidget):
                 PLAYBACK_UNAVAILABLE_MESSAGE
             )
             return
+
+        # Last-resort device fallback for active sink when no explicit selection exists.
+        try:
+            if QMediaDevices is not None and not self.output_device_description:
+                if player is self.player and self.playback_controls is not None and self.playback_controls.audio_output is not None:
+                    self.playback_controls.audio_output.setDevice(QMediaDevices.defaultAudioOutput())
+                elif player is self.processed_player and self.processed_audio_output is not None:
+                    self.processed_audio_output.setDevice(QMediaDevices.defaultAudioOutput())
+        except Exception:
+            pass
 
         if player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
             player.pause()
@@ -1080,10 +1198,8 @@ class AudioViewerWidget(QWidget):
             # Initialize processed player if not already created
             if self.processed_player is None:
                 try:
-                    qt_multimedia = __import__("PyQt6.QtMultimedia", fromlist=["QAudioOutput"])
-                    QAudioOutput = getattr(qt_multimedia, "QAudioOutput", None)
-                    if QAudioOutput is not None:
-                        audio_output = QAudioOutput(self)
+                    audio_output = self.playback_controls.audio_output if self.playback_controls is not None else None
+                    if audio_output is not None:
                         self.processed_audio_output = audio_output
                         self.processed_player = QMediaPlayer(self)
                         self.processed_player.setAudioOutput(audio_output)
@@ -1124,6 +1240,14 @@ class AudioViewerWidget(QWidget):
                 self.interaction_manager.cleanup()
             except Exception:
                 pass
+
+        if self.test_tone_player is not None:
+            try:
+                self.test_tone_player.stop()
+                self.test_tone_player.setSource(QUrl())
+            except Exception:
+                pass
+        self._cleanup_test_tone_temp()
 
         if self.processed_player is not None:
             try:

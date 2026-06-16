@@ -15,6 +15,7 @@ from .audio_viewer import AudioLoadWorker, AudioViewerWidget
 from .annotation_panel import AnnotationPanelWidget
 from .device_config_panel import DeviceConfigPanel
 from .components.settings_widgets import LabeledBrowseField
+from .components.audio_device_selector import AudioDeviceSelector
 from app_settings import load_settings, save_settings
 from const import (
     APP_WINDOW_GEOMETRY,
@@ -171,6 +172,14 @@ class MainWindow(QMainWindow):
         welcome_intro = QLabel(WELCOME_INTRO_TEXT)
         welcome_intro.setWordWrap(True)
         welcome_layout.addWidget(welcome_intro)
+
+        # Audio output device selection
+        audio_device_title = QLabel("Audio Output")
+        audio_device_title.setStyleSheet(SECTION_TITLE_STYLE)
+        welcome_layout.addWidget(audio_device_title)
+
+        self.audio_device_selector = AudioDeviceSelector()
+        welcome_layout.addWidget(self.audio_device_selector)
 
         # Working directory setting for post-processing outputs
         workspace_title = QLabel(SECTION_WORKING_FILES)
@@ -382,6 +391,15 @@ class MainWindow(QMainWindow):
         
         # Connect colorbar to audio viewer
         self.audio_viewer.set_colorbar(self.colorbar)
+
+        # Connect audio device selector to playback controls
+        if hasattr(self.audio_viewer, 'playback_controls') and self.audio_viewer.playback_controls is not None:
+            self.audio_device_selector.on_device_changed_callback = self.audio_viewer.set_audio_output_device
+            self.audio_device_selector.on_test_requested_callback = self.audio_viewer.play_output_test_tone
+            # Set the currently selected device
+            selected_device_info = self.audio_device_selector.get_selected_device_description()
+            if selected_device_info:
+                self.audio_viewer.set_audio_output_device(selected_device_info)
 
         self.install_console_capture()
         

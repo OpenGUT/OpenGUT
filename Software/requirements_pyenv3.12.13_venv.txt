@@ -31,3 +31,5 @@ webdataset
 soundfile
 wget
 h5py
+pyqt6
+pyqtgraph
